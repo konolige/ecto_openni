@@ -9,9 +9,9 @@ capture = OpenNICapture(stream_mode=DEPTH_RGB, registration=True, sync=True)
 fps = FPSDrawer('fps')
 plasm = ecto.Plasm()
 plasm.connect(capture['image'] >> fps[:],
-              fps[:] >> imshow('image display', name='image')[:],
-              capture['depth'] >> imshow('depth display', name='depth')[:],
-              )
+               fps[:] >> imshow('image display', name='image')[:],
+               capture['depth'] >> imshow('depth display', name='depth')[:],
+               )
 
 #plasm.insert(capture)
 

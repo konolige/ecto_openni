@@ -289,6 +289,8 @@ namespace ecto_openni
       cond.wait(lock);
     }
     bool check_sync = true;
+    if (sync_mode_)
+      check_sync = false;	// turn off software sync if we have hardware sync
     double depth_stamp = timestamps[int(log(double(ecto_openni::DEPTH)) / log(2.0))];
     double rgb_stamp = timestamps[int(log(double(ecto_openni::RGB)) / log(2.0))];
     double ir_stamp = timestamps[int(log(double(ecto_openni::IR)) / log(2.0))];
@@ -362,7 +364,7 @@ namespace ecto_openni
     }
     if ((first_ || synced != sync_mode_) && device->isSynchronizationSupported())
     {
-      cout << "Setting sync " << synced << " " << sync_mode_ << endl;
+      cout << "Setting sync" << endl;
       device->setSynchronization(synced);
     }
     if (mode & ecto_openni::DEPTH)
@@ -411,6 +413,7 @@ namespace ecto_openni
       o.declare(&OpenNICapture::focal_length_image_, "focal_length_image", "The focal length of the image stream.");
       o.declare(&OpenNICapture::focal_length_depth_, "focal_length_depth", "The focal length of the depth stream.");
       o.declare(&OpenNICapture::baseline_, "baseline", "The base line of the openni camera.");
+      o.declare(&OpenNICapture::K_, "K", "Camera matrix");
     }
 
     void
@@ -443,13 +446,20 @@ namespace ecto_openni
           cv::cvtColor(image, image, CV_RGB2BGR);
         *image_ = image;
       }
+
+      float f = device_->getImageFocalLength();
+      float w = (float)image.cols;
+      float h = (float)image.rows;
+      cv::Mat K = (cv::Mat_<float>(3,3) << f, 0, w*0.5-0.5, 0, f, h*0.5-0.5, 0,0,1);
+
       *focal_length_depth_ = device_->getDepthFocalLength();
-      *focal_length_image_ = device_->getImageFocalLength();
+      *focal_length_image_ = f;
       *baseline_ = device_->getBaseline();
+      *K_ = K;
       return ecto::OK;
     }
     ecto::spore<StreamMode> stream_mode_;
-    ecto::spore<cv::Mat> depth_, ir_, image_;
+    ecto::spore<cv::Mat> depth_, ir_, image_, K_;
     boost::shared_ptr<OpenNIStuff> device_;
     ecto::spore<bool> registration_, sync_, latched_;
     ecto::spore<float> focal_length_image_, focal_length_depth_, baseline_;
